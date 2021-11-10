@@ -19,6 +19,7 @@ import {
   isFieldDefinitionEnumOrLiteral,
   getEnumValues,
 } from '../introspection/utils'
+import { upperFirst } from '../utils'
 
 type SpecificGraphQLScalarType = 'boolean' | 'number' | 'string'
 
@@ -179,7 +180,7 @@ function shouldRenderDefaultResolver(
   const modelFieldType = modelField.getType()
 
   if (modelFieldType === undefined) {
-    return false;
+    return false
   }
 
   // If both types are enums, and model definition enum is a subset of the graphql enum
@@ -249,6 +250,7 @@ export const printFieldLikeType = (
   options: FieldPrintOptions = {
     isReturn: false,
   },
+  type?: GraphQLTypeObject,
 ): string => {
   if (field.type.isInterface || field.type.isUnion) {
     const typesMap = field.type.isInterface ? interfacesMap : unionsMap
@@ -320,9 +322,15 @@ export const printFieldLikeType = (
 
     const isArrayVoidable = isArrayNullable && field.defaultValue === undefined
 
-    const valueType = isArrayNullable
+    let valueType = isArrayNullable
       ? nullable(array(valueInnerType, { innerUnion })) // [1]
       : array(valueInnerType, { innerUnion })
+
+    // FIXME: This is fix of flow types for input type, reported here https://github.com/prisma-labs/graphqlgen/issues/472
+    if (type != undefined && type.name != null && field.type.isInput) {
+      var typeName = upperFirst(type.name)
+      valueType = typeName + '__' + valueType
+    }
 
     return options.isReturn
       ? valueType
@@ -334,7 +342,13 @@ export const printFieldLikeType = (
 
     const isVoidable = isNullable && field.defaultValue === undefined
 
-    const valueType = isNullable ? nullable(name) : name // [1]
+    let valueType = isNullable ? nullable(name) : name // [1]
+
+    // FIXME: This is fix of flow types for input type, reported here https://github.com/prisma-labs/graphqlgen/issues/472
+    if (type != undefined && type.name != null && field.type.isInput) {
+      var typeName = upperFirst(type.name)
+      valueType = typeName + '__' + valueType
+    }
 
     return options.isReturn ? valueType : kv(field.name, valueType, isVoidable)
   }

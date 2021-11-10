@@ -240,9 +240,33 @@ function renderInputTypeInterfaces(
       return `export interface ${upperFirst(type.name)}_${upperFirst(
         inputTypesMap[typeAssociation].name,
       )} {
-      ${inputTypesMap[typeAssociation].fields.map(field =>
-        printFieldLikeType(field, modelMap, interfacesMap, unionsMap),
-      )}
+      ${inputTypesMap[typeAssociation].fields.map(field => {
+        // FIXME: This is fix of flow types for input type, reported here https://github.com/prisma-labs/graphqlgen/issues/472
+        if (field.type.isInput) {
+          console.log(
+            'FIXED FLOW ' +
+              printFieldLikeType(
+                field,
+                modelMap,
+                interfacesMap,
+                unionsMap,
+                {},
+                type,
+              ) +
+              ' INSTEAD OF ' +
+              printFieldLikeType(field, modelMap, interfacesMap, unionsMap, {}),
+          )
+          return printFieldLikeType(
+            field,
+            modelMap,
+            interfacesMap,
+            unionsMap,
+            {},
+            type,
+          )
+        }
+        return printFieldLikeType(field, modelMap, interfacesMap, unionsMap)
+      })}
     }`
     })
     .join(os.EOL)
